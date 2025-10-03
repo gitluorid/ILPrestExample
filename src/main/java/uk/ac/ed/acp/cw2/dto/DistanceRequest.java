@@ -1,6 +1,5 @@
 package uk.ac.ed.acp.cw2.dto;
 
-public class DistanceRequest {
-    public Position position1;
-    public Position position2;
+public record DistanceRequest(Position position1, Position position2) {
+
 }
