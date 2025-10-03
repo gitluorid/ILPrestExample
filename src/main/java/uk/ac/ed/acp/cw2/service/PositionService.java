@@ -102,7 +102,6 @@ public class PositionService {
         if (regionRequest.region().vertices() == null || regionRequest.region().vertices().isEmpty()) return true;
         List<Position> vertices = regionRequest.region().vertices();
         for (Position vertex : vertices) {if (isInvalidPosition(vertex)) return true;} // Invalid if any vertex is invalid
-        // Polygon must be closed: last == first
         if (vertices.size() < 4) return true; // at least 3 + closing vertex
         Position firstVertex = vertices.getFirst(), lastVertex = vertices.getLast();
         return !firstVertex.lng().equals(lastVertex.lng()) || !firstVertex.lat().equals(lastVertex.lat());
