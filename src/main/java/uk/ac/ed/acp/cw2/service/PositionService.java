@@ -135,7 +135,8 @@ public class PositionService {
             double currentX = vertices.get(current).lng(), currentY = vertices.get(current).lat();
             double previousX = vertices.get(previous).lng(), previousY = vertices.get(previous).lat();
 
-            // Check if the point lies exactly on an edge
+            // Check if the point lies exactly on an edge using cross product
+            // Use a small epsilon (1e-12) to account for floating-point rounding errors
             double cross = (y - currentY) * (previousX - currentX) - (previousY - currentY) * (x - currentX);
             if (Math.abs(cross) < 1e-12 && // nearly collinear
                     // Check if the point is between the vertices
