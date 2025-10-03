@@ -30,10 +30,6 @@ public class ServiceController {
     @Value("${ilp.service.url}")
     public URL serviceUrl;
 
-    /**
-     * GET endpoint for the index page.
-     * @return a simple HTML page with a welcome message and the service URL
-     */
     @GetMapping("/")
     public String index() {
         return "<html><body>" +
@@ -42,10 +38,6 @@ public class ServiceController {
                 "</body></html>";
     }
 
-    /**
-     * GET endpoint that returns the student UUID.
-     * @return a static student ID string
-     */
     @GetMapping("/uid")
     public String uid() {
         return "s2550230";

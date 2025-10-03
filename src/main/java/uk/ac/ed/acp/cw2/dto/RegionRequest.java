@@ -1,4 +1,7 @@
 package uk.ac.ed.acp.cw2.dto;
 
-public record RegionRequest(Position position, Region region) {
-}
+/**
+ * Represents a request to check if a position is inside a region.
+ * Contains the position to check and the target region.
+ */
+public record RegionRequest(Position position, Region region) {}

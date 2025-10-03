@@ -104,13 +104,53 @@ public class PositionService {
         for (Position vertex : vertices) {if (isInvalidPosition(vertex)) return true;} // Invalid if any vertex is invalid
         if (vertices.size() < 4) return true; // at least 3 + closing vertex
         Position firstVertex = vertices.getFirst(), lastVertex = vertices.getLast();
-        return !firstVertex.lng().equals(lastVertex.lng()) || !firstVertex.lat().equals(lastVertex.lat());
+        boolean isClosed = firstVertex.lng().equals(lastVertex.lng()) && firstVertex.lat().equals(lastVertex.lat());
+        return !isClosed; // If the polygon is not closed (first and last vertices differ), it is invalid
     }
 
-    public boolean isInRegion(RegionRequest rReq) {
-        // the rReq.vertices() is a list of vertices to make a region
-        // the rReq.position() is the position to check if it is in the region
-        // the rReq.region().name() is the name of the region
-        return false; // TODO implement algorithm.
+    /**
+     * Checks if the position is inside (or on the border) of the region from the regionRequest.
+     * Uses the Ray-Casting algorithm (even–odd rule):
+     * Reference: Adapted from:
+     * [1] <a href="https://www.youtube.com/watch?v=RSXM9bgqxJM">Ray-Casting algorithm</a>
+     * [2] <a href="https://www.geeksforgeeks.org/cpp/point-in-polygon-in-cpp/">Point in polygon</a>
+     * - Cast a horizontal ray to the right from the point.
+     * - Count how many times it crosses polygon edges.
+     * - Odd count = inside, even count = outside.
+     * Special cases:
+     * - If the point matches a vertex → inside.
+     * - If the point lies exactly on an edge → inside.
+     * @param regionRequest the regionRequest containing the region and position to check
+     * @return true if position is inside the region, false otherwise
+     */
+    public boolean isInRegion(RegionRequest regionRequest) {
+        Position position = regionRequest.position();
+        List<Position> vertices = regionRequest.region().vertices();
+        if (vertices.contains(position)) return true; // If the position is a vertex of the region, it is inside.
+
+        int n = vertices.size();
+        double x = position.lng(), y = position.lat();
+        int count = 0;
+        for (int current = 0, previous = n-1; current < n; previous = current++) {
+            double currentX = vertices.get(current).lng(), currentY = vertices.get(current).lat();
+            double previousX = vertices.get(previous).lng(), previousY = vertices.get(previous).lat();
+
+            // Check if the point lies exactly on an edge
+            double cross = (y - currentY) * (previousX - currentX) - (previousY - currentY) * (x - currentX);
+            if (Math.abs(cross) < 1e-12 && // nearly collinear
+                    // Check if the point is between the vertices
+                    x >= Math.min(currentX, previousX) - 1e-12 && x <= Math.max(currentX, previousX) + 1e-12 &&
+                    y >= Math.min(currentY, previousY) - 1e-12 && y <= Math.max(currentY, previousY) + 1e-12) {
+                return true; // lies exactly on edge
+            }
+
+            // Ray-cast
+            boolean rayBetweenEdgeY = (y < currentY) != (y < previousY); // Ray is between the edge's y-coords
+            // The x-coordinate where the edge intersects the ray
+            double xIntersect = currentX + ((y - currentY) / (previousY - currentY)) * (previousX - currentX);
+            boolean leftOfIntersect = (x < xIntersect);
+            if (rayBetweenEdgeY && leftOfIntersect) count += 1;
+        }
+        return count % 2 == 1; // If the count is odd, the point is inside the region
     }
 }
