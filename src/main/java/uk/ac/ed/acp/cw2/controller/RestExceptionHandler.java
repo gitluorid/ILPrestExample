@@ -5,6 +5,11 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * Global exception handler for REST controllers.
+ * Catches malformed or unreadable JSON requests
+ * an HTTP 400 (Bad Request) response
+ */
 @RestControllerAdvice
 public class RestExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)

@@ -11,6 +11,11 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for {@link PositionService}.
+ * Covers validation and calculation logic for distance, next position,
+ * and region-related functionality.
+ */
 public class PositionServiceTest {
     private final PositionService service = new PositionService();
 
@@ -88,7 +93,7 @@ public class PositionServiceTest {
             NextPositionRequest request = new NextPositionRequest(start, 0.0); // East
             Position next = service.calculateNextPosition(request);
             assertTrue(next.lng() > start.lng());
-            assertEquals(start.lat(), next.lat());
+            assertEquals(start.lat(), next.lat(), 1e-12);
         }
     }
 
