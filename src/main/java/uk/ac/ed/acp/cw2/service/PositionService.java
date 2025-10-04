@@ -17,19 +17,25 @@ import java.util.List;
 @Service
 public class PositionService {
     // Helper method to check if a position is invalid
-    private boolean isInvalidPosition(Position pos) {
-        return pos == null || pos.lng() == null || pos.lat() == null; // Invalid if any of the attributes are null
+    private String validatePosition(Position pos) {
+        if (pos == null) return "position is missing.";
+        if (pos.lng() == null || pos.lat() == null) return "lng or lat is missing.";
+        return null;
     }
 
     /**
      * Checks if a DistanceRequest is invalid.
      * A DistanceRequest is invalid if either position1 or position2 is null or invalid.
      * @param distanceRequest the DistanceRequest to validate
-     * @return true if invalid, false otherwise
+     * @return String: null if valid, or error message if invalid
      */
-    public boolean isInvalidDistance(DistanceRequest distanceRequest) {
-        if (isInvalidPosition(distanceRequest.position1())) return true;
-        return isInvalidPosition(distanceRequest.position2());
+    public String validateDistance(DistanceRequest distanceRequest) {
+        if (distanceRequest == null) return "Distance Request is missing";
+        String errorMsg1 = validatePosition(distanceRequest.position1());
+        if (errorMsg1 != null) return "position1: " + errorMsg1;
+        String errorMsg2 = validatePosition(distanceRequest.position2());
+        if (errorMsg2 != null) return "position2: " + errorMsg2;
+        return null;
     }
 
     /**
@@ -60,14 +66,17 @@ public class PositionService {
      * - The request itself or its start position is null
      * - The angle is null, negative, >= 360, or not a multiple of 22.5 degrees
      * @param positionRequest the NextPositionRequest to validate
-     * @return true if invalid, false otherwise
+     * @return String: null if valid, or error message if invalid
      */
-    public boolean isInvalidNextPosition(NextPositionRequest positionRequest) {
-        if (positionRequest == null || isInvalidPosition(positionRequest.start())) return true;
-        if (positionRequest.angle() == null) {return true;}
+    public String validateNextPosition(NextPositionRequest positionRequest) {
+        if (positionRequest == null) return "Position Request is missing.";
+        String errorMsg = validatePosition(positionRequest.start());
+        if (errorMsg != null) return "Start: " + errorMsg;
+        if (positionRequest.angle() == null) return "Angle is missing.";
         double angle = positionRequest.angle();
-        if (angle < 0 || angle >= 360) {return true;}
-        return angle % 22.5 != 0;
+        if (angle < 0 || angle >= 360) return "Angle out of range: " + angle;
+        if (angle % 22.5 != 0) return "Angle not multiple of 22.5: " + angle;
+        return null;
     }
 
     /**
@@ -80,8 +89,8 @@ public class PositionService {
     public Position calculateNextPosition(NextPositionRequest positionRequest) {
         final double STEP_SIZE = 0.00015;
         double radians = Math.toRadians(positionRequest.angle());
-        double endLng = positionRequest.start().lng() + STEP_SIZE * Math.sin(radians); // sin(angle) adjusts longitude
-        double endLat = positionRequest.start().lat() + STEP_SIZE * Math.cos(radians); // cos(angle) adjusts latitude
+        double endLng = positionRequest.start().lng() + STEP_SIZE * Math.cos(radians); // cos(angle) adjusts longitude
+        double endLat = positionRequest.start().lat() + STEP_SIZE * Math.sin(radians); // sin(angle) adjusts latitude
         return new Position(endLng, endLat);
     }
 
@@ -94,18 +103,24 @@ public class PositionService {
      * - The polygon is not closed (first and last vertices differ)
      * - The polygon has fewer than 4 vertices (needs at least 3 + closing vertex)
      * @param regionRequest the RegionRequest to validate
-     * @return true if the region request is invalid, false otherwise
+     * @return String: null if valid, or error message if invalid
      */
-    public boolean isInvalidRegion(RegionRequest regionRequest) {
-        if (regionRequest == null || isInvalidPosition(regionRequest.position())) return true;
-        if (regionRequest.region() == null || regionRequest.region().name() == null) return true;
-        if (regionRequest.region().vertices() == null || regionRequest.region().vertices().isEmpty()) return true;
+    public String validateRegion(RegionRequest regionRequest) {
+        if (regionRequest == null) return "Region Request is missing.";
+        String errorMsg = validatePosition(regionRequest.position());
+        if (errorMsg != null) return "Region Request position: " + errorMsg;
+        if (regionRequest.region() == null) return "Region is missing.";
+        if (regionRequest.region().name() == null) return "Region name is missing.";
         List<Position> vertices = regionRequest.region().vertices();
-        for (Position vertex : vertices) {if (isInvalidPosition(vertex)) return true;} // Invalid if any vertex is invalid
-        if (vertices.size() < 4) return true; // at least 3 + closing vertex
-        Position firstVertex = vertices.getFirst(), lastVertex = vertices.getLast();
-        boolean isClosed = firstVertex.lng().equals(lastVertex.lng()) && firstVertex.lat().equals(lastVertex.lat());
-        return !isClosed; // If the polygon is not closed (first and last vertices differ), it is invalid
+        if (vertices == null || vertices.isEmpty()) return "Region vertices missing.";
+        for (int i = 0; i < vertices.size(); i++) {
+            String posErrorMsg = validatePosition(vertices.get(i));
+            if (posErrorMsg != null) return "Vertex " + i + ": " + posErrorMsg;
+        }
+        if (vertices.size() < 4) return "Too few vertices.";
+        Position first = vertices.getFirst(), last = vertices.getLast();
+        if (!first.lng().equals(last.lng()) || !first.lat().equals(last.lat())) {return "Polygon not closed.";}
+        return null;
     }
 
     /**
@@ -118,8 +133,8 @@ public class PositionService {
      * - Count how many times it crosses polygon edges.
      * - Odd count = inside, even count = outside.
      * Special cases:
-     * - If the point matches a vertex → inside.
-     * - If the point lies exactly on an edge → inside.
+     * - If the point matches a vertex = inside.
+     * - If the point lies exactly on an edge = inside.
      * @param regionRequest the regionRequest containing the region and position to check
      * @return true if position is inside the region, false otherwise
      */
@@ -131,6 +146,7 @@ public class PositionService {
         int n = vertices.size();
         double x = position.lng(), y = position.lat();
         int count = 0;
+        // Loop through all edges of the polygon
         for (int current = 0, previous = n-1; current < n; previous = current++) {
             double currentX = vertices.get(current).lng(), currentY = vertices.get(current).lat();
             double previousX = vertices.get(previous).lng(), previousY = vertices.get(previous).lat();

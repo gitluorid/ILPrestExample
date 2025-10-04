@@ -24,6 +24,7 @@ import java.net.URL;
 @RequiredArgsConstructor
 public class ServiceController {
 
+    // Service that handles all position-related calculations and validations
     private final PositionService positionService;
 
     private static final Logger logger = LoggerFactory.getLogger(ServiceController.class);
@@ -45,14 +46,28 @@ public class ServiceController {
     }
 
     /**
+     * Helper method to check if a request is invalid.
+     * @param requestName the name of the request
+     * @param errorMsg the error message if invalid
+     * @return true if invalid, false otherwise
+     */
+    private boolean isInvalidRequest(String requestName, String errorMsg) {
+        if (errorMsg != null) {
+            logger.warn("Invalid {} request: {}", requestName, errorMsg);
+            return true; }
+        return false; // If no error message, the request is valid
+    }
+
+    /**
      * POST endpoint to calculate the Euclidean distance between two positions.
      * @param distanceRequest a DistanceRequest containing position1 and position2
      * @return 200 OK with the distance if valid, or 400 Bad Request if input is invalid
      */
     @PostMapping("/distanceTo")
     public ResponseEntity<Double> distanceTo(@RequestBody DistanceRequest distanceRequest) {
-        if (positionService.isInvalidDistance(distanceRequest)) {return ResponseEntity.badRequest().build();}
-        return ResponseEntity.ok().body(positionService.calculateDistance(distanceRequest));
+        String errorMsg = positionService.validateDistance(distanceRequest);
+        if (isInvalidRequest("distanceTo", errorMsg)) return ResponseEntity.badRequest().build();
+        return ResponseEntity.ok(positionService.calculateDistance(distanceRequest));
     }
 
     /**
@@ -62,8 +77,9 @@ public class ServiceController {
      */
     @PostMapping("/isCloseTo")
     public ResponseEntity<Boolean> isCloseTo(@RequestBody DistanceRequest distanceRequest) {
-        if (positionService.isInvalidDistance(distanceRequest)) {return ResponseEntity.badRequest().build();}
-        return ResponseEntity.ok().body(positionService.isCloseTo(distanceRequest,0.00015));
+        String errorMsg = positionService.validateDistance(distanceRequest);
+        if (isInvalidRequest("isCloseTo", errorMsg)) return ResponseEntity.badRequest().build();
+        return ResponseEntity.ok(positionService.isCloseTo(distanceRequest, 0.00015));
     }
 
     /**
@@ -73,8 +89,9 @@ public class ServiceController {
      */
     @PostMapping("/nextPosition")
     public ResponseEntity<Position> nextPosition(@RequestBody NextPositionRequest positionRequest) {
-        if (positionService.isInvalidNextPosition(positionRequest)) {return ResponseEntity.badRequest().build();}
-        return ResponseEntity.ok().body(positionService.calculateNextPosition(positionRequest));
+        String errorMsg = positionService.validateNextPosition(positionRequest);
+        if (isInvalidRequest("nextPosition", errorMsg)) return ResponseEntity.badRequest().build();
+        return ResponseEntity.ok(positionService.calculateNextPosition(positionRequest));
     }
 
     /**
@@ -84,7 +101,8 @@ public class ServiceController {
      */
     @PostMapping("/isInRegion")
     public ResponseEntity<Boolean> isInRegion(@RequestBody RegionRequest regionRequest) {
-        if (positionService.isInvalidRegion(regionRequest)) {return ResponseEntity.badRequest().build();}
-        return ResponseEntity.ok().body(positionService.isInRegion(regionRequest));
+        String errorMsg = positionService.validateRegion(regionRequest);
+        if (isInvalidRequest("isInRegion", errorMsg)) return ResponseEntity.badRequest().build();
+        return ResponseEntity.ok(positionService.isInRegion(regionRequest));
     }
 }
