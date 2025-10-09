@@ -94,6 +94,7 @@ public class PositionService {
         return new Position(endLng, endLat);
     }
 
+
     /**
      * Checks whether a given RegionRequest is invalid.
      * A RegionRequest is invalid if:

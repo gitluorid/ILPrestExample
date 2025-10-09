@@ -1,6 +1,6 @@
 package uk.ac.ed.acp.cw2.dto;
 
 /**
- * Represents a request to calculate the distance between two positions.
+ * Represents a request involving two positions, used for distance calculations.
  */
 public record DistanceRequest(Position position1, Position position2) {}
